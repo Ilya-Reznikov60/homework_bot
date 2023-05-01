@@ -1,4 +1,6 @@
 from dotenv import load_dotenv
+from http import HTTPStatus
+from datetime import datetime
 import os
 import logging
 import requests
@@ -66,26 +68,38 @@ def get_api_answer(timestamp):
     logger.info('Отправляем запрос к API Практикума')
     params = {'from_date': timestamp}
     try:
+        logger.info(
+            f'Отправка запроса к {ENDPOINT} с параметрами {params}.'
+        )
         response = requests.get(ENDPOINT, headers=HEADERS, params=params)
     except Exception:
+        logger.error(f'Не удалось отправить запрос на сервер {ENDPOINT}')
         raise ConnectionError('Проблемы с подключением к серверу')
-    if response.status_code != 200:
+    if response.status_code != HTTPStatus.OK:
+        logger.error(f'Запрос к API Практикума вернул статус-код'
+                     f'{response.status_code}')
         raise Exception(
-            f'Эндпоинт {ENDPOINT} не доступен'
+            f'Эндпоинт {ENDPOINT} не доступен.'
+            f'Код ответа API: {response.status_code}'
         )
+    logger.info('Успешно получен ответ от API Практикума')
     return response.json()
 
 
 def check_response(response):
     """Проверяем ответ API на соответствие документации."""
+    logger.info('Начинаем проверку ответа API на соответствие документации')
     if not isinstance(response, dict):
         raise TypeError('Неверный тип ответа API.')
     if ('homeworks' not in response) or ('current_date' not in response):
         raise KeyError('Отсутствуют обязательные поля'
                        'в ответе API.')
+    logger.info('Извлекаем значение "homeworks" из ответа API')
     homeworks = response.get('homeworks')
     if not isinstance(homeworks, list):
         raise TypeError('Неверный тип значения поля "homeworks" в ответе API.')
+    logger.info('Проверка ответа API на соответствие документации'
+                ' выполнена успешно')
     return homeworks
 
 
@@ -104,7 +118,8 @@ def parse_status(homework):
 def main():
     """Основная логика работы бота."""
     if not check_tokens():
-        exit()
+        logger.critical('Отсутствует переменная окружения')
+        sys.exit()
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     timestamp = int(time.time())
     new_message = ''
@@ -121,7 +136,10 @@ def main():
                 logger.debug('Отсутствует новый статус.')
             timestamp = response.get('current_date')
         except Exception as error:
-            message = f'Сбой в работе программы: {error}'
+            # Согласно замечанию задействовал модуль datetime,
+            # который указывает момент (дату и время) вывода ошибки.
+            message = (f'Сбой в работе программы: {error}.'
+                       f' Момент ошибки: {datetime.now()}')
             logger.error(message)
             if message != new_message:
                 send_message(bot, message)
