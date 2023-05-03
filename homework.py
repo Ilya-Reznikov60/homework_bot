@@ -127,7 +127,9 @@ def main():
         try:
             response = get_api_answer(timestamp)
             homeworks = check_response(response)
-            if homeworks:
+            # Задействовал такую структуру в проверке на наличие
+            # новых статусов заданий
+            if len(homeworks) > 0:
                 message = parse_status(homeworks[0])
                 if message != new_message:
                     send_message(bot, message)
@@ -136,10 +138,11 @@ def main():
                 logger.debug('Отсутствует новый статус.')
             timestamp = response.get('current_date')
         except Exception as error:
-            # Согласно замечанию задействовал модуль datetime,
-            # который указывает момент (дату и время) вывода ошибки.
+            # Объявил переменную для работы с моментом ошибки
+            # Затем передал переменную в f-строку ошибки.
+            current_time = datetime.now()
             message = (f'Сбой в работе программы: {error}.'
-                       f' Момент ошибки: {datetime.now()}')
+                       f' Момент ошибки: {current_time}')
             logger.error(message)
             if message != new_message:
                 send_message(bot, message)
