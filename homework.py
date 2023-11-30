@@ -127,8 +127,6 @@ def main():
         try:
             response = get_api_answer(timestamp)
             homeworks = check_response(response)
-            # Задействовал такую структуру в проверке на наличие
-            # новых статусов заданий
             if len(homeworks) > 0:
                 message = parse_status(homeworks[0])
                 if message != new_message:
@@ -138,8 +136,6 @@ def main():
                 logger.debug('Отсутствует новый статус.')
             timestamp = response.get('current_date')
         except Exception as error:
-            # Объявил переменную для работы с моментом ошибки
-            # Затем передал переменную в f-строку ошибки.
             current_time = datetime.now()
             message = (f'Сбой в работе программы: {error}.'
                        f' Момент ошибки: {current_time}')
